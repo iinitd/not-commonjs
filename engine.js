@@ -8,13 +8,22 @@ function Notmodule() {
     this.parent = null
 }
 
+Notmodule.prototype._cache = {}
+
+Notmodule.prototype._resolvePath = function () {
+    return '.'
+}
+
 Notmodule.prototype.load = function (filename, parent, b) {
+    if (parent) {
+        parent.child = this
+    }
 
     this.parent = parent
     this.id = filename
     this.filename = filename
 
-    var dirname = "."
+    var dirname = this._resolvePath()
     var data = fs.readFileSync(filename + ".js")
 
     var funccontent = 'function inner(notexports, notrequire, notmodule, __filename, __dirname){' + data.toString() + '}'
@@ -25,18 +34,18 @@ Notmodule.prototype.load = function (filename, parent, b) {
 
     inner(this.exports, norequire, this, filename, dirname)
 
-    return this.exports
-
-
 }
-
 
 Notmodule.prototype.notrequire = function (filename) {
 
+    if (this._cache[filename]) {
+        return this._cache[filename].exports
+    }
+
     var child = new Notmodule()
-    child.id = filename
-    child.filename = filename
     child.load(filename, this, true)
+
+    this._cache[filename] = child
 
     return child.exports
 
